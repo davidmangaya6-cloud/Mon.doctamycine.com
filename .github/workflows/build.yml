@@ -27,8 +27,10 @@ jobs:
     - name: Installer les dépendances
       run: npm install
 
-    - name: Créer un dossier web temporaire
-      run: mkdir -p www && echo "<h1>Mon App</h1>" > www/index.html
+    - name: Preparer les fichiers web
+      run: |
+        mkdir -p www
+        cp -r * www/ 2>/dev/null || true
 
     - name: Ajouter la plateforme Android
       run: npx cap add android
