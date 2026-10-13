@@ -17,7 +17,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
-      
 
     - name: Configurer Java (requis pour Android)
       uses: actions/setup-java@v4
@@ -28,10 +27,14 @@ jobs:
     - name: Installer les dépendances
       run: npm install
 
-    - name: Initialiser le projet Android Capacitor
-      run: |
-        npx cap android add || echo "Déjà ajouté"
-        npx cap sync
+    - name: Créer un dossier web temporaire
+      run: mkdir -p www && echo "<h1>Mon App</h1>" > www/index.html
+
+    - name: Ajouter la plateforme Android
+      run: npx cap add android
+
+    - name: Synchroniser le projet
+      run: npx cap sync
 
     - name: Compiler l'APK avec Gradle
       run: |
