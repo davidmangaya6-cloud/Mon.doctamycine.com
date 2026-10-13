@@ -1,6 +1,5 @@
 {
   "appId": "com.monapk.gratuite",
   "appName": "Mon Application",
-  "webDir": ".",
-  "bundledWebRuntime": false
+  "webDir": "www"
 }
