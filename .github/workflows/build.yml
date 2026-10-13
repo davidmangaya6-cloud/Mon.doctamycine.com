@@ -18,7 +18,7 @@ jobs:
       with:
         node-version: 20
 
-    - name: Configurer Java (requis pour Android)
+    - name: Configurer Java
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
@@ -27,10 +27,12 @@ jobs:
     - name: Installer les dépendances
       run: npm install
 
-    - name: Preparer les fichiers web
+    - name: Automatisation et Injection Native
       run: |
         mkdir -p www
         cp -r * www/ 2>/dev/null || true
+        # Injection automatique de capacitor.js dans le HEAD sans casser votre fichier
+        sed -i 's|<head>|<head><script src="capacitor.js"></script>|g' www/index.html
 
     - name: Ajouter la plateforme Android
       run: npx cap add android
@@ -47,4 +49,3 @@ jobs:
       with:
         name: Mon-APK-Gratuite
         path: android/app/build/outputs/apk/debug/app-debug.apk
-        
