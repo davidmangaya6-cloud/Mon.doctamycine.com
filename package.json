@@ -1,14 +1,12 @@
 {
-  "name": "mon.application.gratuite",
+  "name": "docsecur.pro.app",
   "version": "1.0.0",
-  "description": "Mon APK sans limites",
+  "description": "DocSecur Pro - Éditeur d'ordonnances Offline",
   "main": "index.html",
-  "scripts": {
-    "build": "echo 'Pas de build framework nécessaire'"
-  },
   "dependencies": {
     "@capacitor/core": "^6.0.0",
-    "@capacitor/android": "^6.0.0"
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/share": "^6.0.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0"
