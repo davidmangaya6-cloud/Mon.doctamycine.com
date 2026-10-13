@@ -1,0 +1,16 @@
+{
+  "name": "mon.application.gratuite",
+  "version": "1.0.0",
+  "description": "Mon APK sans limites",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Pas de build framework nécessaire'"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
