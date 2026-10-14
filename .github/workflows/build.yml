@@ -34,7 +34,6 @@ jobs:
       run: |
         mkdir -p www
         cp -r * www/ 2>/dev/null || true
-        # Injection automatique de capacitor.js dans le HEAD sans casser votre fichier
         sed -i 's|<head>|<head><script src="capacitor.js"></script>|g' www/index.html
 
     - name: Ajouter la plateforme Android
@@ -46,8 +45,6 @@ jobs:
     - name: Compiler l'APK avec Gradle
       run: |
         cd android
-        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-all.zip" > gradle/wrapper/gradle-wrapper.properties
-        ./gradlew clean
         ./gradlew assembleDebug
 
     - name: Télécharger l'APK final
