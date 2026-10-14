@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docteur Pro - Ordonnance PDF</title>
+
+    <script src="JS/qrcode.min.js"></script>
+    <!-- Intégration officielle de jsPDF pour la génération locale hors-ligne -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #020617; color: #f8fafc; min-height: 100vh; padding-bottom: 20px; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1024px) { .container { grid-template-columns: 1fr 1.1fr; } }
+
+        /* EN-TÊTE APP */
+        header { background-color: #0f172a; border-bottom: 1px solid #1e293b; position: sticky; top: 0; z-index: 50; padding: 12px 16px; }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo-title { font-weight: 900; font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .logo-title span { color: #38bdf8; font-weight: 400; }
+        
+        /* CARTES ET FORMULAIRES */
+        .card { background-color: #0f172a; border: 2px solid #1e293b; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+        .card-header { border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { font-size: 0.85rem; font-weight: 900; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.7rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; background-color: #020617; border: 2px solid #1e293b; color: #fff; font-weight: 700; border-radius: 10px; padding: 10px; font-size: 0.85rem; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: #0284c7; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+        /* BOUTONS */
+        .btn { border: none; border-radius: 10px; padding: 10px 14px; font-size: 0.8rem; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-primary { background-color: #0284c7; color: white; width: 100%; }
+        .btn-primary:hover { background-color: #0369a1; }
+        .btn-dark { background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+        .btn-dark:hover { background-color: #334155; }
+        .btn-success { background-color: #059669; color: white; }
+        .btn-danger { background-color: #ef4444; color: white; padding: 4px 8px; font-size: 0.7rem; }
+        .btn-warning { background-color: #f59e0b; color: white; padding: 4px 8px; font-size: 0.7rem; }
+        .btn-chip { background-color: #1e293b; color: #38bdf8; padding: 4px 8px; font-size: 0.65rem; border: 1px solid #0284c7; border-radius: 6px; cursor: pointer; }
+
+        /* FEUILLE A4 DE RENDU */
+        #ordonnanceDoc {
+            width: 210mm;
+            height: 296mm;
+            background-color: #ffffff;
+            color: #0f172a;
+            padding: 10mm 12mm;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .doc-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; }
+        .doc-logo { width: 50px; height: 50px; border: 2px solid #cbd5e1; border-radius: 8px; padding: 2px; object-fit: contain; }
+        .doc-doctor-info h3 { font-size: 1.05rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; }
+        .doc-doctor-info p { font-size: 0.72rem; color: #475569; }
+
+        .doc-badge-date { background-color: #f0f9ff; border: 2px solid #bae6fd; padding: 6px 10px; border-radius: 8px; text-align: right; }
+
+        .section-divider { border-top: 2px solid #1e3a8a; margin: 8px 0; position: relative; text-align: center; }
+        .section-divider span { position: relative; top: -9px; background: white; padding: 0 10px; font-size: 0.65rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; }
+
+        .patient-box { background-color: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; margin-bottom: 8px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 4px; border-radius: 6px; overflow: hidden; border: 2px solid #cbd5e1; }
+        th { background-color: #1e3a8a; color: white; font-size: 0.68rem; text-transform: uppercase; padding: 6px; text-align: left; }
+        td { font-size: 0.72rem; padding: 6px; border-bottom: 1px solid #e2e8f0; color: #0f172a; }
+
+        .results-box { background-color: #f0f9ff; border: 2px solid #7dd3fc; border-radius: 8px; padding: 8px; margin-top: 8px; }
+        .results-header { font-size: 0.68rem; font-weight: 900; color: #0369a1; text-transform: uppercase; border-bottom: 1px solid #bae6fd; padding-bottom: 3px; margin-bottom: 4px; }
+
+        .doc-footer { 
+            border-top: 2px solid #1e3a8a; 
+            padding-top: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            margin-top: auto; 
+        }
+
+        /* TAMPON ET CACHET MÉDICAL */
+        .stamp-box {
+            width: 140px;
+            height: 75px;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #fafafa;
+        }
+
+        .digital-cachet {
+            width: 70px;
+            height: 70px;
+            border: 2px double #1d4ed8;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #1d4ed8;
+            padding: 2px;
+            transform: rotate(-8deg);
+            opacity: 0.85;
+            font-size: 0.42rem;
+            font-weight: 800;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .img-cachet {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transform: rotate(-5deg);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- EN-TÊTE APP -->
+    <header class="no-print">
+        <div class="header-content">
+            <div class="logo-title">
+                <span>🛡️</span> GÉNIE <span>PRO</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="reinitialiserFormulaire()" class="btn btn-dark" style="color: #f87171;">🔄 Nouveau</button>
+                <button onclick="toggleModalMedecin()" class="btn btn-dark">⚙️ Profil & Cachet</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEUR PRINCIPAL -->
+    <div class="container">
+
+        <!-- FORMULAIRES DE SAISIE -->
+        <div class="no-print">
+            
+            <!-- ETAPE 1 : PARAMÈTRES DU DOCUMENT & PATIENT -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">1. Document & Patient</span>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Date de l'Ordonnance</label>
+                        <input type="text" id="ordonnanceDate" placeholder="ex: 14/10/2026" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Code / N° Ordonnance</label>
+                        <input type="text" id="ordonnanceCode" placeholder="ex: ORD-8492" oninput="updatePreview()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Nom & Prénom du Patient</label>
+                    <input type="text" id="patientNom" placeholder="ex: KABAMBA Jean" oninput="updatePreview()">
+                </div>
+                <div class="grid-3">
+                    <div>
+                        <label>Âge</label>
+                        <input type="text" id="patientAge" placeholder="ex: 28 ans" oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label>Poids (kg)</label>
+                        <input type="text" id="patientPoids" placeholder="ex: 65" oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label>Genre</label>
+                        <select id="patientGenre" onchange="updatePreview()">
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ETAPE 2 : RESULTATS ET DIAGNOSTIC -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">2. Résultats / Diagnostic</span>
+                </div>
+                <div class="form-group">
+                    <label>Examens & Diagnostic</label>
+                    <textarea id="diagnosticInput" rows="2" placeholder="Examen Goutte Épaisse : Positif (Paludisme)..." oninput="updatePreview()"></textarea>
+                </div>
+            </div>
+
+            <!-- ETAPE 3 : PRESCRIPTION -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">3. Traitement & Prescription</span>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Forme Galénique</label>
+                        <select id="medForme">
+                            <option value="Cp">Comprimé (Cp)</option>
+                            <option value="Inj">Injection / Ampoule (Inj)</option>
+                            <option value="Gél">Gélule (Gél)</option>
+                            <option value="Syr">Sirop (Syr)</option>
+                            <option value="Flac">Flacon (Flac)</option>
+                            <option value="Pomm">Pommade / Crème</option>
+                            <option value="Sachet">Sachet</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nom du Médicament</label>
+                        <input type="text" id="medNom" list="medsSuggest" placeholder="ex: Paracétamol 1g">
+                        <datalist id="medsSuggest">
+                            <option value="Paracétamol 1g">
+                            <option value="Amoxicilline 500mg">
+                            <option value="Artemether + Lumefantrine">
+                            <option value="Artesunate Injectable 60mg">
+                            <option value="Ibuprofène 400mg">
+                            <option value="Ciprofloxacine 500mg">
+                            <option value="Metronidazole 500mg">
+                            <option value="Omeprazole 20mg">
+                            <option value="Tramadol 50mg">
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Posologie</label>
+                        <input type="text" id="medPosologie" placeholder="ex: 1 Cp x 3 / jour">
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <button type="button" class="btn-chip" onclick="setPosologie('1 Cp x 3 / jour')">1x3/j</button>
+                            <button type="button" class="btn-chip" onclick="setPosologie('1 Inj Matin et Soir')">Inj M/S</button>
+                            <button type="button" class="btn-chip" onclick="setPosologie('1 Cp matin, 1 Cp soir')">1-0-1</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Durée</label>
+                        <input type="text" id="medDuree" placeholder="ex: 5 jours">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Remarques (Optionnel)</label>
+                    <input type="text" id="medRemarques" placeholder="ex: Pendant le repas / IV Lente">
+                </div>
+
+                <button id="btnAddMed" onclick="ajouterMedicament()" class="btn btn-primary">+ Ajouter à l'ordonnance</button>
+
+                <div id="listeMedicaments" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- BOUTONS D'ACTION -->
+            <div class="card">
+                <div class="grid-2">
+                    <button onclick="genererEtTelechargerPDFExterne()" class="btn btn-primary">📄 Générer le PDF Local</button>
+                    <button onclick="envoyerWhatsAppExterne()" class="btn btn-success">💬 WhatsApp</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ZONE D'APERÇU FORMAT A4 STRICT -->
+        <div style="overflow-x: auto;">
+            <div id="ordonnanceDoc">
+                
+                <div>
+                    <!-- EN-TÊTE MÉDECIN -->
+                    <div class="doc-header">
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <img id="prevDocLogo" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%231e3a8a' stroke-width='2'><path d='M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16'/><path d='M9 7h6'/><path d='M9 11h6'/><path d='M9 15h6'/></svg>" class="doc-logo">
+                            <div class="doc-doctor-info">
+                                <h3 id="docNom">Dr. Nom Prénom</h3>
+                                <p id="docSpecialite">Spécialité Médicale</p>
+                                <p>Adresse : <span id="docAdresse">--</span></p>
+                                <p>Ordre N° : <span id="docOrdre">0000</span> | Agrément : <span id="docAgrement">--</span></p>
+                            </div>
+                        </div>
+                        <div class="doc-badge-date">
+                            <p style="font-size: 0.6rem; font-weight: 800; color: #0284c7;">DATE</p>
+                            <p id="prevDate" style="font-size: 0.85rem; font-weight: 900;">--/--/----</p>
+                            <p id="prevCode" style="font-size: 0.65rem; font-weight: 800; color: #0369a1; margin-top: 2px;">ORD-0000</p>
+                        </div>
+                    </div>
+
+                    <!-- SÉPARATEUR DE STRUCTURE -->
+                    <div class="section-divider">
+                        <span>Informations Médicales & Prescription</span>
+                    </div>
+
+                    <!-- PATIENT -->
+                    <div class="patient-box">
+                        <div>
+                            <p style="font-size: 0.6rem; font-weight: 800; color: #1e3a8a;">PATIENT :</p>
+                            <p id="prevPatientNom" style="font-size: 0.95rem; font-weight: 900;">________________</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 0.6rem; font-weight: 800; color: #64748b;">ÂGE / GENRE / POIDS</p>
+                            <p style="font-size: 0.8rem; font-weight: 800;">
+                                <span id="prevPatientAge">--</span> (<span id="prevPatientGenre">M</span>) • <span id="prevPatientPoids">--</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- ORDONNANCE (TABLEAU) -->
+                    <div style="margin-top: 6px;">
+                        <p style="font-size: 1.1rem; font-weight: 900; font-family: serif; color: #1e3a8a;">R/</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 30px;">N°</th>
+                                    <th>Médicament & Forme</th>
+                                    <th>Posologie</th>
+                                    <th>Durée</th>
+                                    <th>Instructions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prevPrescriptions">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: #94a3b8; padding: 15px;">Aucun médicament renseigné.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- RÉSULTATS / DIAGNOSTIC -->
+                    <div id="prevDiagnosticBlock" class="results-box" style="display: none;">
+                        <div class="results-header">🔬 Diagnostic / Résultats d'Examens</div>
+                        <p id="prevDiagnosticText" style="font-size: 0.72rem; color: #0f172a; font-style: italic;">--</p>
+                    </div>
+                </div>
+
+                <!-- BAS DE PAGE -->
+                <div class="doc-footer">
+                    <div>
+                        <div id="qrcode" style="width: 48px; height: 48px; border: 1px solid #cbd5e1; padding: 2px;"></div>
+                        <p id="prevSecurityHash" style="font-size: 0.55rem; font-family: monospace; font-weight: 800; margin-top: 2px;">SEC: ----</p>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <p style="font-size: 0.6rem; font-weight: 800; color: #64748b; margin-bottom: 2px;">SIGNATURE & CACHET OFFICIEL</p>
+                        <div class="stamp-box" id="stampContainer"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL PROFIL MÉDECIN -->
+    <div id="modalMedecin" style="display: none; position: fixed; inset: 0; background-color: rgba(2,6,23,0.85); z-index: 100; justify-content: center; align-items: center; padding: 15px;">
+        <div style="background-color: #0f172a; border: 2px solid #1e293b; border-radius: 16px; padding: 20px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <h3 style="color: #38bdf8;">Profil & Cachet du Médecin</h3>
+                <button onclick="toggleModalMedecin()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">✕</button>
+            </div>
+            
+            <div class="form-group"><label>Nom Complet</label><input type="text" id="inputDocNom"></div>
+            <div class="form-group"><label>Spécialité</label><input type="text" id="inputDocSpecialite"></div>
+            <div class="form-group"><label>Adresse</label><input type="text" id="inputDocAdresse"></div>
+            <div class="grid-2">
+                <div class="form-group"><label>N° Ordre</label><input type="text" id="inputDocOrdre"></div>
+                <div class="form-group"><label>N° Agrément</label><input type="text" id="inputDocAgrement"></div>
+            </div>
+
+            <hr style="border-color: #1e293b; margin: 15px 0;">
+
+            <div class="form-group">
+                <label>Logo d'Hôpital / Clinique (Optionnel)</label>
+                <input type="file" id="inputDocLogo" accept="image/*" onchange="chargerLogo(this)">
+            </div>
+
+            <div class="form-group">
+                <label>Type de Cachet / Tampon</label>
+                <select id="selectCachetType" onchange="changerTypeCachet(this.value)">
+                    <option value="digital">Cachet Numérique Autogénéré</option>
+                    <option value="image">Importer mon vrai Cachet (Image PNG)</option>
+                    <option value="manuel">Tampon Manuel (Espace vide pour impression)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="groupCachetImage" style="display: none;">
+                <label>Importer votre image de Cachet (Transparente)</label>
+                <input type="file" id="inputDocCachet" accept="image/*" onchange="chargerCachetImage(this)">
+            </div>
+
+            <button onclick="sauvegarderProfilMedecin()" class="btn btn-primary" style="margin-top: 10px;">Enregistrer le Profil</button>
+        </div>
+    </div>
+
+    <!-- SCRIPTS LOGIQUES -->
+    <script>
+        let medicamentsList = [];
+        let editIndex = -1;
+        let doctorProfile = {
+            nom: "Dr. KABUYA Marc",
+            specialite: "Médecin Généraliste",
+            adresse: "Av. de la Justice N° 14, Gombe",
+            ordre: "CNOM/RDC/8492",
+            agrement: "AG/2024/091",
+            logo: "",
+            cachetType: "digital",
+            cachetImg: ""
+        };
+
+        window.onload = function() {
+            const savedProfile = localStorage.getItem('docsecur_doctor');
+            if (savedProfile) {
+                doctorProfile = JSON.parse(savedProfile);
+            }
+            remplirChampsProfil();
+            
+            const today = new Date();
+            const dateFormatted = String(today.getDate()).padStart(2, '0') + '/' + String(today.getMonth() + 1).padStart(2, '0') + '/' + today.getFullYear();
+            document.getElementById('ordonnanceDate').value = dateFormatted;
+
+            const randomCode = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('ordonnanceCode').value = randomCode;
+
+            genererQRCode(randomCode);
+            updatePreview();
+        };
+
+        function setPosologie(valeur) {
+            document.getElementById('medPosologie').value = valeur;
+        }
+
+        function toggleModalMedecin() {
+            const modal = document.getElementById('modalMedecin');
+            modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+        }
+
+        function changerTypeCachet(val) {
+            document.getElementById('groupCachetImage').style.display = (val === 'image') ? 'block' : 'none';
+        }
+
+        function remplirChampsProfil() {
+            document.getElementById('docNom').innerText = doctorProfile.nom;
+            document.getElementById('docSpecialite').innerText = doctorProfile.specialite;
+            document.getElementById('docAdresse').innerText = doctorProfile.adresse;
+            document.getElementById('docOrdre').innerText = doctorProfile.ordre;
+            document.getElementById('docAgrement').innerText = doctorProfile.agrement;
+
+            document.getElementById('inputDocNom').value = doctorProfile.nom;
+            document.getElementById('inputDocSpecialite').value = doctorProfile.specialite;
+            document.getElementById('inputDocAdresse').value = doctorProfile.adresse;
+            document.getElementById('inputDocOrdre').value = doctorProfile.ordre;
+            document.getElementById('inputDocAgrement').value = doctorProfile.agrement;
+            document.getElementById('selectCachetType').value = doctorProfile.cachetType || 'digital';
+
+            if (doctorProfile.logo) {
+                document.getElementById('prevDocLogo').src = doctorProfile.logo;
+            }
+
+            changerTypeCachet(doctorProfile.cachetType || 'digital');
+            afficherCachetApercu();
+        }
+
+        function chargerLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    doctorProfile.logo = e.target.result;
+                    document.getElementById('prevDocLogo').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function chargerCachetImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    doctorProfile.cachetImg = e.target.result;
+                    afficherCachetApercu();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function afficherCachetApercu() {
+            const container = document.getElementById('stampContainer');
+            const type = doctorProfile.cachetType || 'digital';
+
+            if (type === 'image' && doctorProfile.cachetImg) {
+                container.innerHTML = `<img src="${doctorProfile.cachetImg}" class="img-cachet" alt="Cachet">`;
+            } else if (type === 'digital') {
+                container.innerHTML = `
+                    <div class="digital-cachet">
+                        <div style="font-size: 0.38rem; font-weight: 900; color: #1e3a8a;">RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</div>
+                        <div style="font-size: 0.45rem; font-weight: 900; color: #1d4ed8; margin: 1px 0;">${doctorProfile.nom}</div>
+                        <div style="font-size: 0.35rem; color: #334155;">${doctorProfile.ordre}</div>
+                        <div style="font-size: 0.35rem; font-weight: 800; color: #1d4ed8;">★ SÉCURISÉ ★</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">[ Cachet Manuel ]</span>`;
+            }
+        }
+
+        function sauvegarderProfilMedecin() {
+            doctorProfile.nom = document.getElementById('inputDocNom').value || doctorProfile.nom;
+            doctorProfile.specialite = document.getElementById('inputDocSpecialite').value || doctorProfile.specialite;
+            doctorProfile.adresse = document.getElementById('inputDocAdresse').value || doctorProfile.adresse;
+            doctorProfile.ordre = document.getElementById('inputDocOrdre').value || doctorProfile.ordre;
+            doctorProfile.agrement = document.getElementById('inputDocAgrement').value || doctorProfile.agrement;
+            doctorProfile.cachetType = document.getElementById('selectCachetType').value;
+
+            localStorage.setItem('docsecur_doctor', JSON.stringify(doctorProfile));
+            remplirChampsProfil();
+            toggleModalMedecin();
+        }
+
+        function updatePreview() {
+            const nom = document.getElementById('patientNom').value;
+            const age = document.getElementById('patientAge').value;
+            const poids = document.getElementById('patientPoids').value;
+            const genre = document.getElementById('patientGenre').value;
+            const diag = document.getElementById('diagnosticInput').value;
+
+            const dateInput = document.getElementById('ordonnanceDate').value;
+            const codeInput = document.getElementById('ordonnanceCode').value;
+
+            document.getElementById('prevDate').innerText = dateInput ? dateInput : '____/____/________';
+            document.getElementById('prevCode').innerText = codeInput ? codeInput : 'ORD-0000';
+
+            document.getElementById('prevPatientNom').innerText = nom ? nom.toUpperCase() : '________________';
+            document.getElementById('prevPatientAge').innerText = age ? age : '--';
+            document.getElementById('prevPatientGenre').innerText = genre;
+            document.getElementById('prevPatientPoids').innerText = poids ? poids + ' kg' : '--';
+
+            const diagBlock = document.getElementById('prevDiagnosticBlock');
+            if (diag.trim() !== '') {
+                diagBlock.style.display = 'block';
+                document.getElementById('prevDiagnosticText').innerText = diag;
+            } else {
+                diagBlock.style.display = 'none';
+            }
+
+            if (codeInput) {
+                genererQRCode(codeInput);
+            }
+        }
+
+        function ajouterMedicament() {
+            const forme = document.getElementById('medForme').value;
+            const nom = document.getElementById('medNom').value;
+            const posologie = document.getElementById('medPosologie').value;
+            const duree = document.getElementById('medDuree').value;
+            const remarques = document.getElementById('medRemarques').value;
+
+            if (!nom) {
+                alert('Veuillez saisir au moins le nom du médicament.');
+                return;
+            }
+
+            const item = { forme, nom, posologie, duree, remarques };
+
+            if (editIndex === -1) {
+                medicamentsList.push(item);
+            } else {
+                medicamentsList[editIndex] = item;
+                editIndex = -1;
+                document.getElementById('btnAddMed').innerText = "+ Ajouter à l'ordonnance";
+            }
+
+            document.getElementById('medNom').value = '';
+            document.getElementById('medPosologie').value = '';
+            document.getElementById('medDuree').value = '';
+            document.getElementById('medRemarques').value = '';
+
+            afficherListeMedicaments();
+            afficherTableauApercu();
+        }
+
+        function editerMedicament(index) {
+            const med = medicamentsList[index];
+            document.getElementById('medForme').value = med.forme;
+            document.getElementById('medNom').value = med.nom;
+            document.getElementById('medPosologie').value = med.posologie;
+            document.getElementById('medDuree').value = med.duree;
+            document.getElementById('medRemarques').value = med.remarques;
+
+            editIndex = index;
+            document.getElementById('btnAddMed').innerText = "✏️ Modifier le médicament";
+        }
+
+        function supprimerMedicament(index) {
+            medicamentsList.splice(index, 1);
+            if(editIndex === index) {
+                editIndex = -1;
+                document.getElementById('btnAddMed').innerText = "+ Ajouter à l'ordonnance";
+            }
+            afficherListeMedicaments();
+            afficherTableauApercu();
+        }
+
+        function afficherListeMedicaments() {
+            const container = document.getElementById('listeMedicaments');
+            if (medicamentsList.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+            medicamentsList.forEach((med, index) => {
+                html += `
+                    <div style="background: #020617; border: 1px solid #1e293b; padding: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: #f8fafc;">
+                            <strong>${index + 1}. [${med.forme}] ${med.nom}</strong> - ${med.posologie} (${med.duree})
+                        </span>
+                        <div style="display: flex; gap: 4px;">
+                            <button onclick="editerMedicament(${index})" class="btn btn-warning">✏️</button>
+                            <button onclick="supprimerMedicament(${index})" class="btn btn-danger">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function afficherTableauApercu() {
+            const tbody = document.getElementById('prevPrescriptions');
+            if (medicamentsList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #94a3b8; padding: 15px;">Aucun médicament renseigné.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            medicamentsList.forEach((med, index) => {
+                html += `
+                    <tr>
+                        <td style="font-weight: 800;">${index + 1}</td>
+                        <td><strong>[${med.forme}] ${med.nom}</strong></td>
+                        <td>${med.posologie || '--'}</td>
+                        <td>${med.duree || '--'}</td>
+                        <td>${med.remarques || '--'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function genererQRCode(code) {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrContainer, {
+                    text: "DOCSECUR-VERIF:" + code,
+                    width: 44,
+                    height: 44,
+                    colorDark : "#1e3a8a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+            document.getElementById('prevSecurityHash').innerText = 'SEC: ' + code;
+        }
+
+        function reinitialiserFormulaire() {
+            if(confirm("Voulez-vous créer une nouvelle ordonnance ? La saisie actuelle sera effacée.")) {
+                document.getElementById('patientNom').value = '';
+                document.getElementById('patientAge').value = '';
+                document.getElementById('patientPoids').value = '';
+                document.getElementById('diagnosticInput').value = '';
+                
+                medicamentsList = [];
+                editIndex = -1;
+                document.getElementById('btnAddMed').innerText = "+ Ajouter à l'ordonnance";
+
+                const randomCode = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+                document.getElementById('ordonnanceCode').value = randomCode;
+
+                afficherListeMedicaments();
+                afficherTableauApercu();
+                updatePreview();
+            }
+        }
+
+        // Vraie génération de PDF en local via jsPDF compatible Android APK
+        function genererEtTelechargerPDFExterne() {
+            const nomPatient = document.getElementById('patientNom').value.trim();
+            if (!nomPatient) {
+                alert("Veuillez d'abord renseigner le nom du patient.");
+                return;
+            }
+
+            if (typeof window.jspdf === 'undefined') {
+                alert("Erreur : La bibliothèque PDF n'est pas chargée. Vérifiez votre connexion pour le premier chargement.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // En-tête
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(30, 58, 138);
+            doc.text("GÉNIE PRO - ORDONNANCE MÉDICALE", 15, 20);
+
+            doc.setFontSize(10);
+            doc.setTextColor(71, 85, 105);
+            doc.text(doctorProfile.nom || "Dr. Médecin", 15, 28);
+            doc.text("Spécialité : " + (doctorProfile.specialite || "--"), 15, 34);
+            doc.text("Ordre N° : " + (doctorProfile.ordre || "--"), 15, 40);
+
+            const dateOrd = document.getElementById('ordonnanceDate').value;
+            const codeOrd = document.getElementById('ordonnanceCode').value;
+            doc.text("Date : " + dateOrd, 140, 28);
+            doc.text("Réf : " + codeOrd, 140, 34);
+
+            doc.setLineWidth(0.5);
+            doc.setLineColor(30, 58, 138);
+            doc.line(15, 46, 195, 46);
+
+            // Patient
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text("PATIENT : " + nomPatient.toUpperCase(), 15, 55);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text("Âge : " + (document.getElementById('patientAge').value || "--") + " | Poids : " + (document.getElementById('patientPoids').value || "--") + " kg", 15, 62);
+
+            // Prescription R/
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("R/", 15, 75);
+
+            let yPos = 82;
+            doc.setFontSize(10);
+            if (medicamentsList.length === 0) {
+                doc.text("Aucun médicament renseigné.", 20, yPos);
+            } else {
+                medicamentsList.forEach((med, index) => {
+                    doc.setFont("helvetica", "bold");
+                    doc.text(`${index + 1}. [${med.forme}] ${med.nom}`, 20, yPos);
+                    yPos += 6;
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`   Posologie : ${med.posologie || '--'} | Durée : ${med.duree || '--'}`, 20, yPos);
+                    if (med.remarques) {
+                        yPos += 6;
+                        doc.text(`   Remarques : ${med.remarques}`, 20, yPos);
+                    }
+                    yPos += 10;
+                });
+            }
+
+            // Diagnostic
+            const diag = document.getElementById('diagnosticInput').value.trim();
+            if (diag) {
+                yPos += 5;
+                doc.setFont("helvetica", "bold");
+                doc.text("Diagnostic / Examens :", 15, yPos);
+                yPos += 6;
+                doc.setFont("helvetica", "italic");
+                doc.text(diag, 15, yPos, { maxWidth: 180 });
+            }
+
+            // Bas de page
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text("Signature & Cachet officiel", 135, 260);
+            doc.text("Document sécurisé - Génie Pro", 15, 280);
+
+            // Sauvegarde du fichier PDF localement sur le mobile
+            doc.save(`Ordonnance_${nomPatient.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        function envoyerWhatsAppExterne() {
+            const nomPatient = document.getElementById('patientNom').value.trim() || "Patient";
+            const codeOrd = document.getElementById('ordonnanceCode').value.trim() === "" ? "ORD" : document.getElementById('ordonnanceCode').value.trim();
+            const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance médicale sécurisée (${codeOrd}).`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
