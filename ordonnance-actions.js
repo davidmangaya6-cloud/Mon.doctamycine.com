@@ -1,8 +1,8 @@
 // ==========================================
-// ORDONNANCE ACTIONS - VERSION MOBILE OPTIMISÉE
+// ORDONNANCE ACTIONS - GESTION PROPRE SUR MOBILE
 // ==========================================
 
-// 1. TÉLÉCHARGER / IMPRIMER LE PDF (Méthode Native Sûre)
+// 1. TÉLÉCHARGER LE PDF (Génération directe sans quitter l'app)
 function genererEtTelechargerPDFExterne() {
     const element = document.getElementById('ordonnanceDoc');
     if (!element) {
@@ -10,61 +10,48 @@ function genererEtTelechargerPDFExterne() {
         return;
     }
 
-    // Si la bibliothèque html2pdf est bien chargée, on l'utilise
+    const nomPatient = document.getElementById('patientNom').value.trim() || "patient";
+    const nomFichier = `Ordonnance_${nomPatient.replace(/\s+/g, '_')}.pdf`;
+
+    // Si la bibliothèque html2pdf est présente, on l'utilise pour un rendu A4 parfait
     if (typeof html2pdf !== 'undefined') {
-        const nomPatient = document.getElementById('patientNom').value.trim() || "patient";
         const options = {
-            margin:       0,
-            filename:     `Ordonnance_${nomPatient.replace(/\s+/g, '_')}.pdf`,
+            margin:       5,
+            filename:     nomFichier,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                letterRendering: true,
+                scrollY: 0 
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        html2pdf().from(element).set(options).save();
+
+        // Notification visuelle discrète
+        console.log("Génération du PDF en cours...");
+
+        html2pdf().from(element).set(options).save().then(() => {
+            console.log("PDF téléchargé avec succès !");
+        }).catch(err => {
+            console.error("Erreur de génération PDF :", err);
+            alert("Impossible de générer le PDF. Vérifiez les données.");
+        });
     } else {
-        // Solution de secours infaillible sur mobile : Ouvre le module d'impression/export du téléphone
-        imprimerDirectementExterne();
+        // Fallback de sécurité si la librairie ne répond pas
+        alert("La bibliothèque PDF n'est pas encore prête. Patientez une seconde et réessayez.");
     }
 }
 
-// 2. IMPRESSION DIRECTE (Ouvre la boîte de dialogue d'impression ou d'enregistrement PDF du téléphone)
+// 2. IMPRESSION DIRECTE (Redirigée vers le téléchargement PDF pour éviter d'être éjecté de l'app)
 function imprimerDirectementExterne() {
-    const element = document.getElementById('ordonnanceDoc');
-    if (!element) return;
-
-    // Crée une fenêtre temporaire propre pour l'impression mobile
-    const fenetreImpression = window.open('', '_blank');
-    if (!fenetreImpression) {
-        alert("Veuillez autoriser les fenêtres pop-up pour imprimer ou enregistrer en PDF.");
-        return;
-    }
-
-    fenetreImpression.document.write(`
-        <html>
-            <head>
-                <title>Ordonnance Médicale</title>
-                <style>
-                    body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; }
-                    #ordonnanceDoc { width: 100% !important; max-width: 210mm; margin: 0 auto; box-shadow: none !important; }
-                    ${document.querySelector('style') ? document.querySelector('style').innerHTML : ''}
-                </style>
-            </head>
-            <body>
-                ${element.outerHTML}
-                <script>
-                    setTimeout(() => {
-                        window.print();
-                    }, 500);
-                </script>
-            </body>
-        </html>
-    `);
-    fenetreImpression.document.close();
+    // Sur mobile, le téléchargement direct du PDF fait office d'impression sécurisée
+    genererEtTelechargerPDFExterne();
 }
 
 // 3. WHATSAPP
 function envoyerWhatsAppExterne() {
-    const nomPatient = document.getElementById('patientNom').value.trim() || "Patient";
+    const nomPatient = document.getElementById('patientNom').value.trim() / "Patient";
     const codeOrd = document.getElementById('ordonnanceCode').value.trim() || "ORD";
     const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance médicale sécurisée (${codeOrd}).`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
