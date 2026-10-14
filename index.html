@@ -725,10 +725,7 @@
         }
     </script>
 
-    <!-- Liaison vers ton nouveau fichier JS externe contenant les actions PDF/Print/WhatsApp -->
-    <script src="ordonnance-actions.js"></script> 
-    <script>
-        // Fonctions d'export et d'impression 100% stables et hors-ligne
+<script>
         function genererEtTelechargerPDFExterne() {
             window.print();
         }
@@ -744,7 +741,5 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
         }
     </script>
-</body>
-</html>
 </body>
 </html>
