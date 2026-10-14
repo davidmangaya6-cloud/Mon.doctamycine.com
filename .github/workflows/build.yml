@@ -46,8 +46,11 @@ jobs:
     - name: Compiler l'APK avec Gradle
       run: |
         cd android
-        ./gradlew clean
+        rm -rf ~/.gradle/caches/
         ./gradlew assembleDebug --refresh-dependencies
 
     - name: Télécharger l'APK final
       uses: actions/upload-artifact@v4
+      with:
+        name: Mon-APK-Gratuite
+        path: android/app/build/outputs/apk/debug/app-debug.apk
