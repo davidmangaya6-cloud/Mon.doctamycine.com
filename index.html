@@ -727,11 +727,17 @@
 
 <script>
         function genererEtTelechargerPDFExterne() {
-            window.print();
+            // Force l'appel d'impression/PDF du système de manière explicite
+            try {
+                window.focus();
+                window.print();
+            } catch (e) {
+                alert("Impossible de lancer l'impression sur cet appareil.");
+            }
         }
 
         function imprimerDirectementExterne() {
-            window.print();
+            genererEtTelechargerPDFExterne();
         }
 
         function envoyerWhatsAppExterne() {
@@ -740,6 +746,6 @@
             const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance médicale sécurisée (${codeOrd}).`;
             window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
         }
-    </script>
+</script>
 </body>
 </html>
