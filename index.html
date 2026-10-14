@@ -726,6 +726,25 @@
     </script>
 
     <!-- Liaison vers ton nouveau fichier JS externe contenant les actions PDF/Print/WhatsApp -->
-    <script src="ordonnance-actions.js"></script>
+    <script src="ordonnance-actions.js"></script> 
+    <script>
+        // Fonctions d'export et d'impression 100% stables et hors-ligne
+        function genererEtTelechargerPDFExterne() {
+            window.print();
+        }
+
+        function imprimerDirectementExterne() {
+            window.print();
+        }
+
+        function envoyerWhatsAppExterne() {
+            const nomPatient = document.getElementById('patientNom').value.trim() || "Patient";
+            const codeOrd = document.getElementById('ordonnanceCode').value.trim() || "ORD";
+            const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance médicale sécurisée (${codeOrd}).`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
 </body>
 </html>
