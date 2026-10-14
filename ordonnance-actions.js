@@ -1,8 +1,8 @@
 // ==========================================
-// ORDONNANCE ACTIONS - PDF & IMPRESSION ROBUSTE
+// ORDONNANCE ACTIONS - VERSION MOBILE OPTIMISÉE
 // ==========================================
 
-// 1. TÉLÉCHARGER LE PDF (Version optimisée et robuste)
+// 1. TÉLÉCHARGER / IMPRIMER LE PDF (Méthode Native Sûre)
 function genererEtTelechargerPDFExterne() {
     const element = document.getElementById('ordonnanceDoc');
     if (!element) {
@@ -10,51 +10,62 @@ function genererEtTelechargerPDFExterne() {
         return;
     }
 
-    const nomPatient = document.getElementById('patientNom').value.trim() || "patient";
-    const nomFichierDir = `Ordonnance_${nomPatient.replace(/\s+/g, '_')}.pdf`;
+    // Si la bibliothèque html2pdf est bien chargée, on l'utilise
+    if (typeof html2pdf !== 'undefined') {
+        const nomPatient = document.getElementById('patientNom').value.trim() || "patient";
+        const options = {
+            margin:       0,
+            filename:     `Ordonnance_${nomPatient.replace(/\s+/g, '_')}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().from(element).set(options).save();
+    } else {
+        // Solution de secours infaillible sur mobile : Ouvre le module d'impression/export du téléphone
+        imprimerDirectementExterne();
+    }
+}
 
-    // Options de configuration pour html2pdf
-    const options = {
-        margin:       0,
-        filename:     nomFichierDir,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-            scale: 2, 
-            useCORS: true, 
-            letterRendering: true,
-            scrollY: 0
-        },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+// 2. IMPRESSION DIRECTE (Ouvre la boîte de dialogue d'impression ou d'enregistrement PDF du téléphone)
+function imprimerDirectementExterne() {
+    const element = document.getElementById('ordonnanceDoc');
+    if (!element) return;
 
-    // Vérification de la présence de la bibliothèque
-    if (typeof html2pdf === 'undefined') {
-        alert("La bibliothèque de génération PDF n'est pas chargée. Vérifiez votre connexion ou les scripts.");
+    // Crée une fenêtre temporaire propre pour l'impression mobile
+    const fenetreImpression = window.open('', '_blank');
+    if (!fenetreImpression) {
+        alert("Veuillez autoriser les fenêtres pop-up pour imprimer ou enregistrer en PDF.");
         return;
     }
 
-    // Génération du PDF
-    html2pdf().from(element).set(options).save().then(() => {
-        console.log("PDF téléchargé avec succès.");
-    }).catch(err => {
-        console.error("Erreur PDF :", err);
-        // Solution de secours : si le PDF bloque, on bascule sur l'impression/aperçu natif
-        window.print();
-    });
+    fenetreImpression.document.write(`
+        <html>
+            <head>
+                <title>Ordonnance Médicale</title>
+                <style>
+                    body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; }
+                    #ordonnanceDoc { width: 100% !important; max-width: 210mm; margin: 0 auto; box-shadow: none !important; }
+                    ${document.querySelector('style') ? document.querySelector('style').innerHTML : ''}
+                </style>
+            </head>
+            <body>
+                ${element.outerHTML}
+                <script>
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                </script>
+            </body>
+        </html>
+    `);
+    fenetreImpression.document.close();
 }
 
-// 2. IMPRESSION DIRECTE
-function imprimerDirectementExterne() {
-    // Déclenche l'impression ou l'ouverture du gestionnaire d'impression du téléphone/navigateur
-    window.print();
-}
-
-// 3. WHATSAPP (Optionnel ou désactivé si vous préférez vous concentrer sur le PDF)
+// 3. WHATSAPP
 function envoyerWhatsAppExterne() {
     const nomPatient = document.getElementById('patientNom').value.trim() || "Patient";
     const codeOrd = document.getElementById('ordonnanceCode').value.trim() || "ORD";
-    
-    const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance sécurisée (${codeOrd}). Veuillez récupérer votre fichier PDF auprès du cabinet.`;
-    const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(urlWhatsApp, '_blank');
+    const message = `Bonjour ${nomPatient}, voici la référence de votre ordonnance médicale sécurisée (${codeOrd}).`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
 }
