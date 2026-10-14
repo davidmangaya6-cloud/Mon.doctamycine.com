@@ -46,7 +46,7 @@ jobs:
     - name: Compiler l'APK avec Gradle
       run: |
         cd android
-        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip" > gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-all.zip" > gradle/wrapper/gradle-wrapper.properties
         ./gradlew clean
         ./gradlew assembleDebug
 
