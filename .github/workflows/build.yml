@@ -50,6 +50,18 @@ jobs:
         echo "--- contenu de www/js ---"
         ls -la www/js || true
 
+    - name: Installer html2pdf depuis npm
+      run: |
+        npm install html2pdf.js@0.10.3 --no-save --legacy-peer-deps
+        mkdir -p www/js
+        cp node_modules/html2pdf.js/dist/html2pdf.bundle.min.js www/js/html2pdf.bundle.min.js
+        echo "--- contenu de www/js ---"
+        ls -la www/js
+
+    - name: Vérifier la config Capacitor
+      run: |
+        cat capacitor.config.* || true
+
     - name: Ajouter la plateforme Android
       run: |
         if [ ! -d android ]; then npx cap add android; fi
