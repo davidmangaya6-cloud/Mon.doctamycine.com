@@ -28,7 +28,7 @@ jobs:
       run: npm install
 
     - name: Installer les plugins natifs Capacitor
-      run: npm install @capacitor/filesystem @capacitor/share
+      run: npm install @capacitor/filesystem @capacitor/share --legacy-peer-deps
 
     - name: Automatisation et Injection Native
       run: |
