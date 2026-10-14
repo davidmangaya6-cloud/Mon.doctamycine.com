@@ -726,21 +726,19 @@
     </script>
 
 <script>
+        // Fonctions d'action directes sans terminal ni plugin
         function genererEtTelechargerPDFExterne() {
-            // Solution de secours interactive pour Android hors-ligne
             const nomPatient = document.getElementById('patientNom').value.trim();
             if(!nomPatient) {
-                alert("Veuillez d'abord renseigner le nom du patient.");
+                alert("Veuillez entrer le nom du patient avant de générer le document.");
                 return;
             }
-            
-            // Ouvre une boîte de dialogue propre simulant le téléchargement réussi de l'ordonnance
-            alert("Ordonnance de " + nomPatient + " prête pour l'export. (Impression/PDF lancée)");
+            // Ouvre une impression propre ou une fenêtre de dialogue du navigateur
             window.print();
         }
 
         function imprimerDirectementExterne() {
-            genererEtTelechargerPDFExterne();
+            window.print();
         }
 
         function envoyerWhatsAppExterne() {
