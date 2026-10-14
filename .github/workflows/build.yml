@@ -42,14 +42,13 @@ jobs:
           --exclude www --exclude .git --exclude .github \
           --exclude package.json --exclude package-lock.json \
           ./ www/
-        # Capacitor exige un index.html
+        # Corrige la casse : JS -> js (Android est sensible aux majuscules)
+        if [ -d www/JS ] && [ ! -d www/js ]; then mv www/JS www/js; fi
         if [ ! -f www/index.html ]; then cp Claudia_.html www/index.html; fi
         echo "--- contenu de www ---"
-        ls -la www www/js
-
-    - name: Vérifier la config Capacitor
-      run: |
-        cat capacitor.config.* || true
+        ls -la www
+        echo "--- contenu de www/js ---"
+        ls -la www/js || true
 
     - name: Ajouter la plateforme Android
       run: |
