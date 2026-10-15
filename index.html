@@ -151,6 +151,10 @@
                 page-break-inside: avoid !important;
             }
         }
+    
+        /* Suggestions de médicaments */
+        .sugg-box { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .sugg-chip { background-color: #1e293b; color: #38bdf8; border: 1px solid #0284c7; border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -246,18 +250,8 @@
                     </div>
                     <div class="form-group">
                         <label>Nom du Médicament</label>
-                        <input type="text" id="medNom" list="medsSuggest" placeholder="ex: Paracétamol 1g">
-                        <datalist id="medsSuggest">
-                            <option value="Paracétamol 1g">
-                            <option value="Amoxicilline 500mg">
-                            <option value="Artemether + Lumefantrine">
-                            <option value="Artesunate Injectable 60mg">
-                            <option value="Ibuprofène 400mg">
-                            <option value="Ciprofloxacine 500mg">
-                            <option value="Metronidazole 500mg">
-                            <option value="Omeprazole 20mg">
-                            <option value="Tramadol 50mg">
-                        </datalist>
+                        <input type="text" id="medNom" placeholder="ex: Paracétamol 1g" autocomplete="off" oninput="filtrerSuggestionsMeds()">
+                        <div id="medSuggestions" class="sugg-box"></div>
                     </div>
                 </div>
 
@@ -289,10 +283,8 @@
 
             <!-- BOUTONS D'ACTION (MIS À JOUR VERS LE FICHIER EXTERNE) -->
             <div class="card">
-                <div class="grid-3">
-                    <button onclick="genererEtTelechargerPDFExterne()" class="btn btn-primary">📄 Télécharger PDF</button>
-                    <button onclick="imprimerDirectementExterne()" class="btn btn-dark">🖨️ Imprimer</button>
-                    <button onclick="envoyerWhatsAppExterne()" class="btn btn-success">💬 WhatsApp</button>
+                <div>
+                    <button onclick="genererEtTelechargerPDFExterne()" class="btn btn-primary">📄 Télécharger l'ordonnance PDF</button>
                 </div>
             </div>
 
@@ -397,12 +389,12 @@
                 <button onclick="toggleModalMedecin()" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">✕</button>
             </div>
             
-            <div class="form-group"><label>Nom Complet</label><input type="text" id="inputDocNom"></div>
-            <div class="form-group"><label>Spécialité</label><input type="text" id="inputDocSpecialite"></div>
-            <div class="form-group"><label>Adresse</label><input type="text" id="inputDocAdresse"></div>
+            <div class="form-group"><label>Nom Complet</label><input type="text" id="inputDocNom" placeholder="ex: Dr. Prénom NOM"></div>
+            <div class="form-group"><label>Spécialité</label><input type="text" id="inputDocSpecialite" placeholder="ex: Médecin généraliste"></div>
+            <div class="form-group"><label>Adresse</label><input type="text" id="inputDocAdresse" placeholder="ex: Avenue, numéro, commune"></div>
             <div class="grid-2">
-                <div class="form-group"><label>N° Ordre</label><input type="text" id="inputDocOrdre"></div>
-                <div class="form-group"><label>N° Agrément</label><input type="text" id="inputDocAgrement"></div>
+                <div class="form-group"><label>N° Ordre</label><input type="text" id="inputDocOrdre" placeholder="Votre n° d'Ordre"></div>
+                <div class="form-group"><label>N° Agrément</label><input type="text" id="inputDocAgrement" placeholder="Votre n° d'agrément"></div>
             </div>
 
             <hr style="border-color: #1e293b; margin: 15px 0;">
@@ -434,11 +426,11 @@
         let medicamentsList = [];
         let editIndex = -1;
         let doctorProfile = {
-            nom: "Dr. KABUYA Marc",
-            specialite: "Médecin Généraliste",
-            adresse: "Av. de la Justice N° 14, Gombe",
-            ordre: "CNOM/RDC/8492",
-            agrement: "AG/2024/091",
+            nom: "",
+            specialite: "",
+            adresse: "",
+            ordre: "",
+            agrement: "",
             logo: "",
             cachetType: "digital",
             cachetImg: ""
@@ -447,7 +439,15 @@
         window.onload = function() {
             const savedProfile = localStorage.getItem('docsecur_doctor');
             if (savedProfile) {
-                doctorProfile = JSON.parse(savedProfile);
+                try { doctorProfile = JSON.parse(savedProfile); } catch (e) {}
+                // Efface l'ancien profil d'exemple (fictif) s'il avait été enregistré
+                if (doctorProfile.nom === "Dr. KABUYA Marc" && doctorProfile.ordre === "CNOM/RDC/8492") {
+                    doctorProfile.nom = "";
+                    doctorProfile.specialite = "";
+                    doctorProfile.adresse = "";
+                    doctorProfile.ordre = "";
+                    doctorProfile.agrement = "";
+                }
             }
             remplirChampsProfil();
             
@@ -477,11 +477,11 @@
         }
 
         function remplirChampsProfil() {
-            document.getElementById('docNom').innerText = doctorProfile.nom;
-            document.getElementById('docSpecialite').innerText = doctorProfile.specialite;
-            document.getElementById('docAdresse').innerText = doctorProfile.adresse;
-            document.getElementById('docOrdre').innerText = doctorProfile.ordre;
-            document.getElementById('docAgrement').innerText = doctorProfile.agrement;
+            document.getElementById('docNom').innerText = doctorProfile.nom || '[ Nom du médecin ]';
+            document.getElementById('docSpecialite').innerText = doctorProfile.specialite || '[ Spécialité ]';
+            document.getElementById('docAdresse').innerText = doctorProfile.adresse || '[ Adresse ]';
+            document.getElementById('docOrdre').innerText = doctorProfile.ordre || '[ N° Ordre ]';
+            document.getElementById('docAgrement').innerText = doctorProfile.agrement || '[ N° Agrément ]';
 
             document.getElementById('inputDocNom').value = doctorProfile.nom;
             document.getElementById('inputDocSpecialite').value = doctorProfile.specialite;
@@ -541,11 +541,11 @@
         }
 
         function sauvegarderProfilMedecin() {
-            doctorProfile.nom = document.getElementById('inputDocNom').value || doctorProfile.nom;
-            doctorProfile.specialite = document.getElementById('inputDocSpecialite').value || doctorProfile.specialite;
-            doctorProfile.adresse = document.getElementById('inputDocAdresse').value || doctorProfile.adresse;
-            doctorProfile.ordre = document.getElementById('inputDocOrdre').value || doctorProfile.ordre;
-            doctorProfile.agrement = document.getElementById('inputDocAgrement').value || doctorProfile.agrement;
+            doctorProfile.nom = document.getElementById('inputDocNom').value.trim();
+            doctorProfile.specialite = document.getElementById('inputDocSpecialite').value.trim();
+            doctorProfile.adresse = document.getElementById('inputDocAdresse').value.trim();
+            doctorProfile.ordre = document.getElementById('inputDocOrdre').value.trim();
+            doctorProfile.agrement = document.getElementById('inputDocAgrement').value.trim();
             doctorProfile.cachetType = document.getElementById('selectCachetType').value;
 
             localStorage.setItem('docsecur_doctor', JSON.stringify(doctorProfile));
@@ -723,6 +723,49 @@
                 updatePreview();
             }
         }
+    </script>
+
+    <script>
+        var MEDS_SUGGESTIONS = [
+            "Paracétamol 1g", "Amoxicilline 500mg", "Artemether + Lumefantrine",
+            "Artesunate Injectable 60mg", "Ibuprofène 400mg", "Ciprofloxacine 500mg",
+            "Metronidazole 500mg", "Omeprazole 20mg", "Tramadol 50mg"
+        ];
+
+        function filtrerSuggestionsMeds() {
+            var champ = document.getElementById('medNom');
+            var boite = document.getElementById('medSuggestions');
+            if (!champ || !boite) return;
+            var q = champ.value.trim().toLowerCase();
+            boite.innerHTML = '';
+            if (!q) return;
+            MEDS_SUGGESTIONS.filter(function (m) {
+                var bas = m.toLowerCase();
+                return bas.indexOf(q) !== -1 && bas !== q;
+            }).slice(0, 5).forEach(function (m) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'sugg-chip';
+                b.textContent = m;
+                b.onclick = function () {
+                    champ.value = m;
+                    boite.innerHTML = '';
+                    var p = document.getElementById('medPosologie');
+                    if (p) p.focus();
+                };
+                boite.appendChild(b);
+            });
+        }
+
+        (function () {
+            var champ = document.getElementById('medNom');
+            var boite = document.getElementById('medSuggestions');
+            if (champ && boite) {
+                champ.addEventListener('blur', function () {
+                    setTimeout(function () { boite.innerHTML = ''; }, 250);
+                });
+            }
+        })();
     </script>
 
     <!-- Liaison vers ton nouveau fichier JS externe contenant les actions PDF/Print/WhatsApp -->
