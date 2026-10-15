@@ -41,6 +41,7 @@ jobs:
           --exclude node_modules --exclude android --exclude ios \
           --exclude www --exclude .git --exclude .github \
           --exclude package.json --exclude package-lock.json \
+          --exclude icon-only.png --exclude splash.png --exclude splash-dark.png --exclude assets \
           ./ www/
         # Corrige la casse : JS -> js (Android est sensible aux majuscules)
         if [ -d www/JS ] && [ ! -d www/js ]; then mv www/JS www/js; fi
@@ -65,6 +66,17 @@ jobs:
     - name: Ajouter la plateforme Android
       run: |
         if [ ! -d android ]; then npx cap add android; fi
+
+    - name: Générer l'icône et l'écran de démarrage
+      run: |
+        if [ -f icon-only.png ] && [ -f splash.png ]; then
+          mkdir -p assets
+          cp icon-only.png splash.png assets/
+          if [ -f splash-dark.png ]; then cp splash-dark.png assets/; fi
+          npx --yes @capacitor/assets generate --android
+        else
+          echo "Pas d'icône trouvée : étape ignorée"
+        fi
 
     - name: Synchroniser le projet
       run: |
