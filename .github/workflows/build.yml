@@ -95,3 +95,62 @@ jobs:
       with:
         name: Ordonnance-APK
         path: android/app/build/outputs/apk/debug/app-debug.apk
+
+    # ================= PLAY STORE =================
+    # Ces étapes ne s'exécutent que si la clé de signature est configurée
+    # dans GitHub (Settings > Secrets and variables > Actions).
+    # Sans clé, tout ce qui est ci-dessus fonctionne comme avant.
+
+    - name: Play Store - vérifier la clé de signature
+      id: cle
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      run: |
+        if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+          echo "pret=true" >> "$GITHUB_OUTPUT"
+          echo "Clé de signature trouvée : le bundle Play Store sera fabriqué."
+        else
+          echo "pret=false" >> "$GITHUB_OUTPUT"
+          echo "Clé de signature non configurée : étapes Play Store ignorées (l'APK de test est produite normalement)."
+        fi
+
+    - name: Play Store - numéro de version
+      if: steps.cle.outputs.pret == 'true'
+      run: |
+        CODE=$(( $(date +%s) / 60 ))
+        NAME="1.0.${{ github.run_number }}"
+        FILE=android/app/build.gradle
+        sed -i -E "s/versionCode[[:space:]]*=?[[:space:]]*[0-9]+/versionCode = $CODE/" "$FILE"
+        sed -i -E "s/versionName[[:space:]]*=?[[:space:]]*\"[^\"]*\"/versionName = \"$NAME\"/" "$FILE"
+        grep -n -E "applicationId|versionCode|versionName" "$FILE"
+        grep -q "versionCode = $CODE" "$FILE" || { echo "ERREUR : impossible de régler versionCode dans $FILE"; exit 1; }
+
+    - name: Play Store - compiler le bundle (AAB)
+      if: steps.cle.outputs.pret == 'true'
+      run: |
+        cd android
+        ./gradlew bundleRelease
+
+    - name: Play Store - signer le bundle
+      if: steps.cle.outputs.pret == 'true'
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      run: |
+        AAB=android/app/build/outputs/bundle/release/app-release.aab
+        test -f "$AAB" || { echo "ERREUR : bundle introuvable ($AAB)"; exit 1; }
+        echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+        jarsigner -keystore "$RUNNER_TEMP/upload-keystore.jks" \
+          -storepass:env KEYSTORE_PASSWORD -keypass:env KEYSTORE_PASSWORD \
+          -sigalg SHA256withRSA -digestalg SHA-256 \
+          "$AAB" upload
+        jarsigner -verify "$AAB" | tail -n 2
+        rm -f "$RUNNER_TEMP/upload-keystore.jks"
+
+    - name: Play Store - récupérer le bundle signé
+      if: steps.cle.outputs.pret == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: DOCTAMYCINE-Play-Store-AAB
+        path: android/app/build/outputs/bundle/release/app-release.aab
