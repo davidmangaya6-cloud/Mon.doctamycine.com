@@ -1,0 +1,42 @@
+name: Créer la clé de signature (une seule fois)
+
+# À lancer UNE SEULE FOIS, à la main (Actions > ce workflow > Run workflow),
+# après avoir créé le secret KEYSTORE_PASSWORD.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cle:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Configurer Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '21'
+
+    - name: Générer la clé
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      run: |
+        if [ -z "$KEYSTORE_PASSWORD" ]; then
+          echo "ERREUR : crée d'abord le secret KEYSTORE_PASSWORD dans GitHub."
+          exit 1
+        fi
+        keytool -genkeypair -storetype PKCS12 \
+          -keystore upload-keystore.jks -alias upload \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -storepass:env KEYSTORE_PASSWORD -keypass:env KEYSTORE_PASSWORD \
+          -dname "CN=DOCTAMYCINE, O=DOCTAMYCINE, C=CD"
+        base64 -w0 upload-keystore.jks > upload-keystore.b64.txt
+        echo "Clé créée."
+
+    - name: Récupérer la clé (fichier privé, supprimé après 1 jour)
+      uses: actions/upload-artifact@v4
+      with:
+        name: CLE-DE-SIGNATURE-PRIVEE
+        path: |
+          upload-keystore.jks
+          upload-keystore.b64.txt
+        retention-days: 1
