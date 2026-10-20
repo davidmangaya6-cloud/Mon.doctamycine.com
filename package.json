@@ -1,7 +1,7 @@
 {
   "name": "HAPPY.STORE.APP",
   "version": "1.0.0",
-  "description": "HAPPY STORE - Éditeur d'ordonnances Offline",
+  "description": "HAPPY STORE - les shopping devient plus simple",
   "main": "index.html",
   "dependencies": {
     "@capacitor/core": "^6.0.0",
