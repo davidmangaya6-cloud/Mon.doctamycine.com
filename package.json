@@ -1,7 +1,7 @@
 {
-  "name": "docsecur.pro.app",
+  "name": "HAPPY.STORE.APP",
   "version": "1.0.0",
-  "description": "DocSecur Pro - Éditeur d'ordonnances Offline",
+  "description": "HAPPY STORE - Éditeur d'ordonnances Offline",
   "main": "index.html",
   "dependencies": {
     "@capacitor/core": "^6.0.0",
