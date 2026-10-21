@@ -1,7 +1,7 @@
 {
-  "name": "HAPPY.STORE.APP",
+  "name": "DOCTAMYCINE.com.APP",
   "version": "1.0.0",
-  "description": "HAPPY STORE - les shopping devient plus simple",
+  "description": "DOCTAMYCINE - Ordonnance révolutionnaire ",
   "main": "index.html",
   "dependencies": {
     "@capacitor/core": "^6.0.0",
